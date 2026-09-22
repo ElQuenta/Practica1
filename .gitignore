@@ -21,6 +21,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Markdown notes and answer guides
+*.md
+
 # Operating system files
 .DS_Store
 Thumbs.db

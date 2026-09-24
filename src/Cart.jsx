@@ -1,7 +1,12 @@
-function Cart({ items, total, onQty, onRemove, onCheckout }) {
+function Cart({ items, total, onQty, onRemove, onCheckout, onClose }) {
   return (
     <aside className="cart">
-      <h2>Tu carrito</h2>
+      <div className="cart-header">
+        <h2>Tu carrito</h2>
+        <button className="cart-close" aria-label="Cerrar carrito" onClick={onClose}>
+          ×
+        </button>
+      </div>
 
       {items.length === 0 && <p>El carrito está vacío.</p>}
 
@@ -9,8 +14,10 @@ function Cart({ items, total, onQty, onRemove, onCheckout }) {
         {items.map((item, index) => (
           <li key={item.id} className="cart-item">
             <img src={item.thumbnail} alt={item.title} width="60" />
-            <span className="cart-title">{item.title}</span>
-            <span>${item.price.toFixed(2)}</span>
+            <div className="cart-details">
+              <span className="cart-title">{item.title}</span>
+              <span className="cart-price">${(item.price * (1 - item.discountPercentage / 100)).toFixed(2)}</span>
+            </div>
             <div className="qty">
               <button aria-label="Quitar uno" onClick={() => onQty(index, -1)}>
                 -
@@ -23,7 +30,7 @@ function Cart({ items, total, onQty, onRemove, onCheckout }) {
             <button
               className="remove"
               aria-label={`Eliminar ${item.title}`}
-              onClick={() => onRemove(item)}
+              onClick={() => onRemove(item.id)}
             >
               x
             </button>

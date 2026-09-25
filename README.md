@@ -73,7 +73,7 @@ Estado: los bugs 13–16 se reprodujeron en `main` y quedaron corregidos en `4e1
 ### 4. El filtro de categorías solo tiene 4 de las 24 categorías: Alta / P1
 **Pasos:** 1) Abrir el selector de categorías: solo aparecen beauty/fragrances/furniture/groceries. 2) El catálogo tiene 194 productos en 24 categorías (laptops, smartphones, tablets, etc.). No hay forma de filtrarlas, y solo aparecen si se buscan por nombre (p. ej. "phone" → "mobile-accessories"), sin poder filtrarlas.
 **Heurística #4 (Consistencia):** el filtro no corresponde con el catálogo real y deja productos sin categoría accesible.
-**Fix:** las categorías se cargan desde `GET /products/category-list`. Al elegir una, se piden todos sus productos a `GET /products/category/{categoria}`. Con búsqueda activa, la categoría filtra los resultados de la búsqueda. Los nombres se muestran legibles ("Mobile accessories").
+**Fix:** las categorías se cargan desde `GET /products/category-list`. Al elegir una, se piden todos sus productos a `GET /products/category/{categoria}`. Con búsqueda activa, la categoría filtra los resultados de la búsqueda. Los nombres se muestran legibles ("Mobile accessories"). Además, "Todas las categorías" ahora carga el catálogo completo (`?limit=0`, 194 productos) en vez de solo los primeros 30, así que celulares, laptops, etc. se ven sin tener que buscarlos.
 
 ### 5. Si la API falla, el usuario no recibe ningún mensaje: Alta / P1
 **Pasos:** 1) DevTools → Network → Offline. 2) Recargar o buscar. 3) Solo aparece "Sin resultados." o datos viejos, sin ninguna explicación.

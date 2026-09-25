@@ -109,7 +109,7 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController()
-    let url = `${API_URL}?limit=30`
+    let url = `${API_URL}?limit=0`
 
     if (debouncedSearch) {
       url = `${API_URL}/search?q=${encodeURIComponent(debouncedSearch)}&limit=0`

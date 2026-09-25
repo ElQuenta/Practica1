@@ -1,38 +1,39 @@
 import { useState } from 'react'
 import { getDiscountedPrice } from './pricing'
 
-function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) {
+function Cart({ items, total, getStock, t, onQty, onRemove, onCheckout, onClose }) {
   const [pendingRemoveId, setPendingRemoveId] = useState(null)
 
   return (
-    <aside className="cart" aria-label="Carrito de compras">
+    <aside className="cart" aria-label={t.cartLabel}>
       <div className="cart-header">
-        <h2>Tu carrito</h2>
-        <button className="cart-close" aria-label="Cerrar carrito" title="Cerrar (Esc)" onClick={onClose}>
+        <h2>{t.cartTitle}</h2>
+        <button className="cart-close" aria-label={t.closeCart} title={t.closeCartHint} onClick={onClose}>
           ×
         </button>
       </div>
 
-      {items.length === 0 && <p>El carrito está vacío.</p>}
+      {items.length === 0 && <p>{t.emptyCart}</p>}
 
       <ul className="cart-list">
         {items.map((item) => {
           const maxQty = getStock(item)
           const atMax = item.quantity >= maxQty
+          const title = t.productTitle(item)
 
           return (
             <li key={item.id} className="cart-item">
               <img src={item.thumbnail} alt="" width="60" />
               <div className="cart-details">
-                <span className="cart-title">{item.title}</span>
+                <span className="cart-title">{title}</span>
                 <span className="cart-price">
-                  ${getDiscountedPrice(item).toFixed(2)} c/u · Subtotal ${(getDiscountedPrice(item) * item.quantity).toFixed(2)}
+                  {t.money(getDiscountedPrice(item))} {t.each} · {t.subtotal} {t.money(getDiscountedPrice(item) * item.quantity)}
                 </span>
-                {atMax && <span className="cart-limit">Máximo disponible</span>}
+                {atMax && <span className="cart-limit">{t.maxAvailable}</span>}
               </div>
               <div className="qty">
                 <button
-                  aria-label={`Quitar una unidad de ${item.title}`}
+                  aria-label={t.removeOne(title)}
                   onClick={() => onQty(item.id, -1)}
                   disabled={item.quantity <= 1}
                 >
@@ -40,7 +41,7 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
                 </button>
                 <span aria-live="polite">{item.quantity}</span>
                 <button
-                  aria-label={`Agregar una unidad de ${item.title}`}
+                  aria-label={t.addOne(title)}
                   onClick={() => onQty(item.id, 1)}
                   disabled={atMax}
                 >
@@ -49,8 +50,8 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
               </div>
               <button
                 className="remove"
-                aria-label={`Eliminar ${item.title}`}
-                title="Eliminar del carrito"
+                aria-label={t.removeItem(title)}
+                title={t.removeHint}
                 onClick={() => setPendingRemoveId(item.id)}
               >
                 x
@@ -59,7 +60,7 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
                 <div
                   className="remove-confirm"
                   role="alertdialog"
-                  aria-label={`Confirmar eliminación de ${item.title}`}
+                  aria-label={t.confirmRemoveLabel(title)}
                   onKeyDown={(e) => {
                     // Esc cancela solo la confirmación, no cierra el carrito
                     if (e.key === 'Escape') {
@@ -68,10 +69,10 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
                     }
                   }}
                 >
-                  <span>¿Eliminar este producto del carrito?</span>
+                  <span>{t.confirmRemove}</span>
                   <div className="remove-confirm-actions">
                     <button onClick={() => setPendingRemoveId(null)} autoFocus>
-                      Cancelar
+                      {t.cancel}
                     </button>
                     <button
                       className="danger"
@@ -80,7 +81,7 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
                         setPendingRemoveId(null)
                       }}
                     >
-                      Eliminar
+                      {t.remove}
                     </button>
                   </div>
                 </div>
@@ -91,9 +92,9 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
       </ul>
 
       <div className="cart-footer">
-        <h3>Total: ${total.toFixed(2)}</h3>
+        <h3>{t.total}: {t.money(total)}</h3>
         <button className="pay-btn" onClick={onCheckout} disabled={items.length === 0}>
-          Pagar
+          {t.pay}
         </button>
       </div>
     </aside>

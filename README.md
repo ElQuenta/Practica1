@@ -23,3 +23,133 @@ Abre la dirección que muestra la terminal (normalmente http://localhost:5173).
    - El prompt que usaste con la IA y si tuviste que corregirlo.
 
 Los datos vienen de https://dummyjson.com/products
+
+---
+
+# Reporte QA – rama `Ai-Fixes`
+
+Escala: **Severidad** (Crítica / Alta / Media / Baja) = impacto en el usuario o en los datos. **Prioridad** (P1 / P2 / P3) = urgencia para corregirlo.
+Estado: los bugs 13–16 se reprodujeron en `main` y quedaron corregidos en `4e1d6da Fix v1`; el resto se reprodujo sobre `Fix v1` y se corrigió en esta iteración.
+
+| # | Bug | Severidad | Prioridad | Heurística de Nielsen | Estado |
+|---|-----|-----------|-----------|-----------------------|--------|
+| 1 | El precio de la tarjeta no coincide con lo que se cobra | Crítica | P1 | #4 Consistencia y estándares | Corregido |
+| 2 | La búsqueda acumula productos: al borrarla, el catálogo no vuelve a su estado inicial | Alta | P1 | #1 Visibilidad del estado del sistema | Corregido |
+| 3 | La búsqueda oculta resultados que la API sí devolvió | Alta | P1 | #2 Coincidencia sistema–mundo real | Corregido |
+| 4 | El filtro de categorías no incluye las categorías de los resultados | Alta | P2 | #4 Consistencia y estándares | Corregido |
+| 5 | Si la API falla, el usuario no recibe ningún mensaje | Alta | P1 | #9 Reconocer, diagnosticar y recuperarse de errores | Corregido |
+| 6 | Condición de carrera y una petición por cada tecla en la búsqueda | Media | P2 | #1 Visibilidad del estado del sistema | Corregido |
+| 7 | El "+" del carrito no avisa cuando se alcanza el stock máximo | Media | P2 | #1 Visibilidad del estado del sistema | Corregido |
+| 8 | El "-" con cantidad 1 elimina el producto sin avisar | Media | P2 | #5 Prevención de errores | Corregido |
+| 9 | Stock y productos obsoletos desde localStorage (caché sin invalidar) | Media | P2 | #1 Visibilidad del estado del sistema | Corregido |
+| 10 | "Sin resultados" no dice por qué ni ofrece cómo salir | Baja | P3 | #3 Control y libertad del usuario | Corregido |
+| 11 | El carrito no se cierra con Esc y sigue abierto después de pagar | Baja | P3 | #7 Flexibilidad y eficiencia de uso | Corregido |
+| 12 | El carrito no muestra subtotales y las etiquetas de stock son ambiguas | Baja | P3 | #6 Reconocer antes que recordar | Corregido |
+| 13 | "Agregar" no agrega el producto al carrito | Crítica | P1 | #1 Visibilidad del estado del sistema | Corregido (Fix v1) |
+| 14 | Al abrir el carrito ya no se puede cerrar | Crítica | P1 | #3 Control y libertad del usuario | Corregido (Fix v1) |
+| 15 | El carrito no persiste al recargar | Alta | P1 | #6 Reconocer antes que recordar | Corregido (Fix v1) |
+| 16 | Comprar no actualiza el stock | Alta | P1 | #2 Coincidencia sistema–mundo real | Corregido (Fix v1) |
+| 17 | Con muchos productos, el total y el botón Pagar quedan fuera de la vista | Media | P2 | #1 Visibilidad del estado del sistema | Corregido |
+| 18 | "x" elimina un producto del carrito sin confirmar | Media | P2 | #5 Prevención de errores | Corregido |
+| 19 | El nombre "Tienda Tech" no corresponde al catálogo (belleza, muebles, comestibles…) | Baja | P3 | #2 Coincidencia sistema–mundo real | Corregido |
+
+## Detalle
+
+### 1. El precio de la tarjeta no coincide con lo que se cobra: Crítica / P1
+**Pasos:** 1) Abrir la tienda. 2) Ver el precio de "Essence Mascara Lash Princess" en la tarjeta ($9.99). 3) Agregarlo y abrir el carrito: aparece $8.94 (10.48% de descuento) y ese es el total cobrado.
+**Heurística #4 (Consistencia):** el mismo producto muestra dos precios distintos y el usuario no sabe cuál se le cobrará, lo que genera desconfianza en el pago.
+**Fix:** la tarjeta muestra el precio final con descuento, el precio original tachado y el porcentaje. El cálculo se centralizó en `src/pricing.js` y lo usan la tarjeta, el carrito y el total.
+
+### 2. La búsqueda acumula productos: Alta / P1
+**Pasos:** 1) Buscar "phone". 2) Borrar la búsqueda. 3) La grilla muestra más de 30 productos: los resultados de "phone" se quedaron mezclados con el catálogo inicial y se guardan en localStorage.
+**Heurística #1 (Visibilidad del estado):** lo que se ve no refleja el estado real de la consulta.
+**Fix:** cada respuesta de la API reemplaza la lista en lugar de fusionarse con la anterior.
+
+### 3. La búsqueda oculta resultados que la API sí devolvió: Alta / P1
+**Pasos:** 1) Buscar "phone". 2) La API devuelve "Apple AirPods Max Silver" (coincide en la descripción), pero el filtro local por título lo oculta.
+**Heurística #2 (Mundo real):** el usuario espera ver todo lo que coincide con su búsqueda, no solo lo que coincide con el título.
+**Fix:** se quitó el filtro local por título. El backend ya filtra y el cliente solo filtra por categoría.
+
+### 4. El filtro de categorías no incluye las categorías de los resultados: Alta / P2
+**Pasos:** 1) Buscar "phone". 2) Abrir el selector: solo hay beauty/fragrances/furniture/groceries y no se puede filtrar por "mobile-accessories" ni "smartphones".
+**Heurística #4 (Consistencia):** el filtro no corresponde con los datos que se muestran.
+**Fix:** las categorías se derivan de los productos cargados, con nombres legibles ("Mobile accessories").
+
+### 5. Si la API falla, el usuario no recibe ningún mensaje: Alta / P1
+**Pasos:** 1) DevTools → Network → Offline. 2) Recargar o buscar. 3) Solo aparece "Sin resultados." o datos viejos, sin ninguna explicación.
+**Heurística #9 (Recuperarse de errores):** el error se oculta y el usuario cree que el producto no existe.
+**Fix:** mensaje de error claro (`role="alert"`) con un botón **Reintentar**.
+
+### 6. Condición de carrera en la búsqueda: Media / P2
+**Pasos:** 1) Escribir rápido "laptop" con la red en "Slow 3G". 2) Se lanza una petición por cada tecla y una respuesta vieja puede llegar al final y pisar la correcta.
+**Heurística #1 (Visibilidad del estado):** los resultados no corresponden al texto escrito.
+**Fix:** debounce de 300 ms y `AbortController`, que cancela las peticiones obsoletas.
+
+### 7. El "+" del carrito no avisa del stock máximo: Media / P2
+**Pasos:** 1) Agregar un producto y pulsar "+" hasta el tope. 2) El botón sigue activo pero no hace nada.
+**Heurística #1 (Visibilidad del estado):** un clic sin respuesta parece un fallo.
+**Fix:** el "+" se deshabilita al llegar al máximo y aparece el aviso "Máximo disponible". En la tarjeta, el botón cambia a "Máximo en carrito".
+
+### 8. El "-" con cantidad 1 elimina el producto sin avisar: Media / P2
+**Pasos:** 1) Con un producto en cantidad 1, pulsar "-". 2) El producto desaparece del carrito.
+**Heurística #5 (Prevención de errores):** es fácil eliminar un producto por accidente, cuando ya existe un botón explícito para eliminar.
+**Fix:** el "-" se deshabilita en 1 y para eliminar se usa la "x" (que pide confirmación, ver #18).
+
+### 9. Stock y productos obsoletos desde localStorage: Media / P2
+**Pasos:** 1) Cargar la tienda. 2) El catálogo se guardaba completo en `tienda-products` y al recargar se mostraba primero el caché viejo, y el stock de la API nunca se actualizaba.
+**Heurística #1 (Visibilidad del estado):** se muestran datos que ya no son reales.
+**Fix:** solo se guardan las unidades compradas (`tienda-purchased`). El stock efectivo es el de la API menos lo comprado.
+
+### 10. "Sin resultados" no dice por qué ni ofrece cómo salir: Baja / P3
+**Pasos:** 1) Buscar "phone" y filtrar por una categoría sin coincidencias. 2) Solo aparece "Sin resultados.".
+**Heurística #3 (Control y libertad):** el usuario no tiene una salida evidente.
+**Fix:** el mensaje indica la búsqueda y la categoría activas, con un botón **Limpiar filtros**.
+
+### 11. El carrito no se cierra con Esc y sigue abierto después de pagar: Baja / P3
+**Pasos:** 1) Abrir el carrito y pulsar Esc: no se cierra. 2) Pagar: el panel queda abierto y vacío.
+**Heurística #7 (Flexibilidad y eficiencia):** faltan atajos habituales y queda un paso innecesario.
+**Fix:** el carrito se cierra con Esc, tiene `aria-expanded` en el botón y se cierra al completar la compra.
+
+### 12. Sin subtotales y etiquetas ambiguas: Baja / P3
+**Pasos:** 1) Agregar 3 unidades de un producto. 2) El carrito muestra solo el precio unitario y la tarjeta dice "Stock" cuando en realidad es lo disponible menos lo que está en el carrito.
+**Heurística #6 (Reconocer antes que recordar):** el usuario tiene que calcular mentalmente los subtotales.
+**Fix:** se muestran "c/u · Subtotal", "Disponibles: N · En carrito: M" y etiquetas `aria-label` específicas por producto.
+
+### 13. "Agregar" no agrega el producto al carrito: Crítica / P1
+**Pasos (en `main`):** 1) Pulsar "Agregar" en cualquier producto. 2) El contador del carrito no cambia y el carrito sigue vacío.
+**Heurística #1 (Visibilidad del estado):** la acción no produce ningún efecto visible.
+**Causa y fix:** `addToCart` hacía `cart.push()` y `setCart(cart)` sobre el mismo array, y React no re-renderizaba. Ahora el estado se actualiza de forma inmutable con `setCart(current => …)`.
+
+### 14. Al abrir el carrito ya no se puede cerrar: Crítica / P1
+**Pasos (en `main`):** 1) Pulsar "Carrito". 2) El panel fijo tapa el botón y no tiene forma de cerrarse.
+**Heurística #3 (Control y libertad):** el usuario queda atrapado, sin una "salida de emergencia".
+**Fix:** botón "×" en el encabezado del carrito, cierre con Esc y cierre automático al pagar.
+
+### 15. El carrito no persiste al recargar: Alta / P1
+**Pasos (en `main`):** 1) Agregar productos. 2) Recargar la página. 3) El carrito aparece vacío.
+**Heurística #6 (Reconocer antes que recordar):** obliga al usuario a recordar y volver a armar su selección.
+**Fix:** el carrito se guarda en `localStorage` (`tienda-cart`) y se normaliza al leerlo.
+
+### 16. Comprar no actualiza el stock: Alta / P1
+**Pasos (en `main`):** 1) Agregar 2 unidades de un producto y pagar. 2) La tarjeta muestra el mismo stock que antes.
+**Heurística #2 (Mundo real):** en una tienda real, lo comprado deja de estar disponible.
+**Fix:** las unidades compradas se registran (`tienda-purchased`) y se descuentan del stock de la API. Además, la cantidad en el carrito nunca supera lo disponible.
+
+### 17. El total y el botón Pagar quedan fuera de la vista: Media / P2
+**Pasos:** 1) Agregar 10 o más productos distintos. 2) Abrir el carrito: para ver el total y pagar hay que desplazar todo el panel.
+**Heurística #1 (Visibilidad del estado):** el total y la acción principal deben verse siempre.
+**Fix:** el panel usa una columna flex. El encabezado ("Tu carrito") y el pie (total + Pagar) quedan fijos, y solo la lista de productos tiene scroll.
+
+### 18. "x" elimina sin confirmar: Media / P2
+**Pasos:** 1) Con productos en el carrito, pulsar "x". 2) El producto desaparece al instante y no hay forma de deshacerlo.
+**Heurística #5 (Prevención de errores):** es una acción destructiva sin confirmación ni opción de deshacer.
+**Fix:** una mini confirmación en línea sobre el mismo producto ("¿Eliminar este producto del carrito?", con Cancelar enfocado por defecto y Eliminar), manteniendo el diseño del panel.
+
+### 19. El nombre no corresponde al catálogo: Baja / P3
+**Pasos:** 1) Abrir la tienda: se llama "Tienda Tech", pero vende maquillaje, perfumes, muebles y comestibles.
+**Heurística #2 (Mundo real):** el nombre genera una expectativa (tecnología) que el catálogo no cumple.
+**Fix:** se renombró a **Bazar Central** (encabezado y `<title>`).
+
+## Verificación
+- `npm run build`: OK.
+- Manual (`npm run dev`): buscar/limpiar, filtrar, agregar hasta el máximo, +/- en el carrito, eliminar con confirmación, carrito con más de 10 productos, pagar, Esc, recargar (persistencia), modo offline y reintentar.

@@ -129,7 +129,8 @@ select {
   box-sizing: border-box;
   background: #fff;
   padding: 20px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   z-index: 20;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
 }
@@ -159,13 +160,19 @@ select {
 .cart-list {
   list-style: none;
   padding: 0;
+  margin: 16px 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 .cart-item {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -222,4 +229,88 @@ select {
 .pay-btn:disabled {
   background: #aaa;
   cursor: not-allowed;
+}
+
+.price-old {
+  color: #888;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.discount {
+  color: #1b7f3b;
+  font-size: 14px;
+}
+
+.cart-limit {
+  font-size: 12px;
+  color: #b06000;
+}
+
+.qty button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.error,
+.empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.error {
+  color: #b00020;
+}
+
+.error button,
+.empty button {
+  border: 1px solid #d5d5d5;
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.cart-footer {
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.cart-footer h3 {
+  margin: 0 0 12px;
+}
+
+.remove-confirm {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff4f4;
+  border: 1px solid #f0c4c4;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.remove-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.remove-confirm button {
+  border: 1px solid #d5d5d5;
+  background: #fff;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.remove-confirm .danger {
+  background: #b00020;
+  border-color: #b00020;
+  color: #fff;
 }

@@ -68,6 +68,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [category, setCategory] = useState('all')
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
@@ -95,9 +96,26 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController()
-    const url = debouncedSearch
-      ? `${API_URL}/search?q=${encodeURIComponent(debouncedSearch)}`
-      : `${API_URL}?limit=30`
+
+    fetch(`${API_URL}/category-list`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => {
+        // si falla, el selector usa las categorías de los productos cargados
+      })
+
+    return () => controller.abort()
+  }, [reloadKey])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    let url = `${API_URL}?limit=30`
+
+    if (debouncedSearch) {
+      url = `${API_URL}/search?q=${encodeURIComponent(debouncedSearch)}&limit=0`
+    } else if (category !== 'all') {
+      url = `${API_URL}/category/${encodeURIComponent(category)}?limit=0`
+    }
 
     setLoading(true)
     setError(null)
@@ -122,7 +140,7 @@ function App() {
       })
 
     return () => controller.abort()
-  }, [debouncedSearch, reloadKey])
+  }, [debouncedSearch, category, reloadKey])
 
   useEffect(() => {
     if (!showCart) {
@@ -210,7 +228,9 @@ function App() {
     alert(`Compra realizada con éxito. Total pagado: $${total.toFixed(2)}`)
   }
 
-  const categories = [...new Set(products.map((product) => product.category))].sort()
+  const categoryOptions = categories.length > 0
+    ? categories
+    : [...new Set(products.map((product) => product.category))].sort()
   const visibleProducts = products.filter(
     (product) => category === 'all' || product.category === category
   )
@@ -234,14 +254,11 @@ function App() {
           onChange={(e) => setCategory(e.target.value)}
         >
           <option value="all">Todas las categorías</option>
-          {categories.map((c) => (
+          {categoryOptions.map((c) => (
             <option key={c} value={c}>
               {formatCategory(c)}
             </option>
           ))}
-          {category !== 'all' && !categories.includes(category) && (
-            <option value={category}>{formatCategory(category)}</option>
-          )}
         </select>
         <button
           className="cart-btn"

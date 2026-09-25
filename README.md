@@ -36,7 +36,7 @@ Estado: los bugs 13–16 se reprodujeron en `main` y quedaron corregidos en `4e1
 | 1 | El precio de la tarjeta no coincide con lo que se cobra | Crítica | P1 | #4 Consistencia y estándares | Corregido |
 | 2 | La búsqueda acumula productos: al borrarla, el catálogo no vuelve a su estado inicial | Alta | P1 | #1 Visibilidad del estado del sistema | Corregido |
 | 3 | La búsqueda oculta resultados que la API sí devolvió | Alta | P1 | #2 Coincidencia sistema–mundo real | Corregido |
-| 4 | El filtro de categorías no incluye las categorías de los resultados | Alta | P2 | #4 Consistencia y estándares | Corregido |
+| 4 | El filtro de categorías solo tiene 4 de las 24 categorías: laptops, smartphones, tablets, etc. son inalcanzables | Alta | P1 | #4 Consistencia y estándares | Corregido |
 | 5 | Si la API falla, el usuario no recibe ningún mensaje | Alta | P1 | #9 Reconocer, diagnosticar y recuperarse de errores | Corregido |
 | 6 | Condición de carrera y una petición por cada tecla en la búsqueda | Media | P2 | #1 Visibilidad del estado del sistema | Corregido |
 | 7 | El "+" del carrito no avisa cuando se alcanza el stock máximo | Media | P2 | #1 Visibilidad del estado del sistema | Corregido |
@@ -70,10 +70,10 @@ Estado: los bugs 13–16 se reprodujeron en `main` y quedaron corregidos en `4e1
 **Heurística #2 (Mundo real):** el usuario espera ver todo lo que coincide con su búsqueda, no solo lo que coincide con el título.
 **Fix:** se quitó el filtro local por título. El backend ya filtra y el cliente solo filtra por categoría.
 
-### 4. El filtro de categorías no incluye las categorías de los resultados: Alta / P2
-**Pasos:** 1) Buscar "phone". 2) Abrir el selector: solo hay beauty/fragrances/furniture/groceries y no se puede filtrar por "mobile-accessories" ni "smartphones".
-**Heurística #4 (Consistencia):** el filtro no corresponde con los datos que se muestran.
-**Fix:** las categorías se derivan de los productos cargados, con nombres legibles ("Mobile accessories").
+### 4. El filtro de categorías solo tiene 4 de las 24 categorías: Alta / P1
+**Pasos:** 1) Abrir el selector de categorías: solo aparecen beauty/fragrances/furniture/groceries. 2) El catálogo tiene 194 productos en 24 categorías (laptops, smartphones, tablets, etc.). No hay forma de filtrarlas, y solo aparecen si se buscan por nombre (p. ej. "phone" → "mobile-accessories"), sin poder filtrarlas.
+**Heurística #4 (Consistencia):** el filtro no corresponde con el catálogo real y deja productos sin categoría accesible.
+**Fix:** las categorías se cargan desde `GET /products/category-list`. Al elegir una, se piden todos sus productos a `GET /products/category/{categoria}`. Con búsqueda activa, la categoría filtra los resultados de la búsqueda. Los nombres se muestran legibles ("Mobile accessories").
 
 ### 5. Si la API falla, el usuario no recibe ningún mensaje: Alta / P1
 **Pasos:** 1) DevTools → Network → Offline. 2) Recargar o buscar. 3) Solo aparece "Sin resultados." o datos viejos, sin ninguna explicación.

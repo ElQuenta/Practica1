@@ -56,7 +56,18 @@ function Cart({ items, total, getStock, onQty, onRemove, onCheckout, onClose }) 
                 x
               </button>
               {pendingRemoveId === item.id && (
-                <div className="remove-confirm" role="alertdialog" aria-label={`Confirmar eliminación de ${item.title}`}>
+                <div
+                  className="remove-confirm"
+                  role="alertdialog"
+                  aria-label={`Confirmar eliminación de ${item.title}`}
+                  onKeyDown={(e) => {
+                    // Esc cancela solo la confirmación, no cierra el carrito
+                    if (e.key === 'Escape') {
+                      e.stopPropagation()
+                      setPendingRemoveId(null)
+                    }
+                  }}
+                >
                   <span>¿Eliminar este producto del carrito?</span>
                   <div className="remove-confirm-actions">
                     <button onClick={() => setPendingRemoveId(null)} autoFocus>
